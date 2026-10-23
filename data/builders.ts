@@ -65,10 +65,9 @@ export function buildAccountRequest(overrides: Partial<AccountRequest> = {}): Ac
 }
 
 export function buildDepositRequest(
-    overrides: Overrides<DepositRequest, 'accountId'>
+    overrides: Overrides<DepositRequest, 'accountId' | 'amount'>
 ): DepositRequest {
     return {
-        amount: faker.number.int({ min: 100, max: 100_000 }),
         currency: DEFAULT_CURRENCY,
         gateway: 'bank-sim',
         ...overrides,

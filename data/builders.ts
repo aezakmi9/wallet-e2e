@@ -6,7 +6,9 @@ import type {
     DepositRequest,
     HoldCaptureRequest,
     HoldRequest,
+    JournalReferenceQuery,
     LoginRequest,
+    PageQuery,
     PaymentRequest,
     RefreshTokenRequest,
     RegistrationRequest,
@@ -104,6 +106,24 @@ export function buildHoldCaptureRequest(
     overrides: Overrides<HoldCaptureRequest, 'destinationAccountId'>
 ): HoldCaptureRequest {
     return { ...overrides };
+}
+
+// Matches the API's defaults
+export function buildPageQuery(overrides: Partial<PageQuery> = {}): PageQuery {
+    return {
+        page: 0,
+        size: 20,
+        ...overrides,
+    };
+}
+
+export function buildJournalReferenceQuery(
+    overrides: Overrides<JournalReferenceQuery, 'id'>
+): JournalReferenceQuery {
+    return {
+        type: 'transfer',
+        ...overrides,
+    };
 }
 
 export function buildUserRoleRequest(overrides: Partial<UserRoleRequest> = {}): UserRoleRequest {

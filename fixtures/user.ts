@@ -6,6 +6,7 @@ type WorkerFixtures = {
     apiRequest: APIRequestContext;
     user: WalletUser;
     recipient: WalletUser;
+    admin: WalletUser;
 };
 
 // /api/auth/** is rate limited per IP, so users are registered once per worker and
@@ -36,6 +37,13 @@ export const test = base.extend<{}, WorkerFixtures>({
             await use(await WalletUser.register(apiRequest));
         },
         { scope: 'worker' },
+    ],
+
+    admin: [
+        async ({apiRequest}, use) => {
+            await use(await WalletUser.login(apiRequest, process.env.E2E_USER_EMAIL!, process.env.E2E_USER_PASSWORD!));
+        },
+    {scope: 'worker'}
     ],
 });
 

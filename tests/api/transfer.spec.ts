@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { test, expect } from '@fixtures/user';
 import { buildTransferRequest } from '@data/builders';
 import type { ApiErrorResponse, ApiResponse, TransferDto } from '@api/types';
+import { fr, tr } from '@faker-js/faker';
 
 // Deposits and transfers both charge a 2% fee, rounded down. The transfer fee comes out of
 // what the recipient gets.
@@ -185,3 +186,38 @@ test('Should reject a reused Idempotency-Key with a different request', async ({
     expect(second.status()).toBe(422);
     expect(await user.balanceOf(from)).toBe(fromBefore - 1_000);
 });
+
+
+test('Should not overdraw the account with concurrent transfers', async({user, recipient})=> {
+    const from = await user.account();
+    await user.fund(from, 5_000);
+    const to = await recipient.account();
+    const fromBefore = await user.balanceOf(from);
+    const toBefore = await recipient.balanceOf(to);
+
+    const amount = Math.floor(fromBefore /3) + 1;
+    const transfer = buildTransferRequest({idFromAccount:from.id, idToAccount: to.id, amount});
+
+    const responses = await Promise.all(
+        Array.from({length:5}, ()=> user.createTransfer(transfer))
+    );
+
+    let completed = 0;
+    for(const response of responses) {
+        if(response.status()===409) continue;
+        expect(response.status(), await response.text()).toBe(201);
+
+        const {payload} = (await response.json()) as ApiResponse<TransferDto>;
+
+        expect(['COMPLETED','FAILED']).toContain(payload.status);
+        if(payload.status ==='COMPLETED') completed++;
+    }
+
+    expect(completed).toBeGreaterThanOrEqual(1);
+    expect(completed).toBeLessThanOrEqual(2);
+
+    const fromAfter = await user.balanceOf(from);
+    expect(fromAfter).toBeGreaterThanOrEqual(0);
+    expect(fromAfter).toBe(fromBefore - completed * amount);
+    expect(await recipient.balanceOf(to)).toBe(toBefore+completed * afterFee(amount));
+})

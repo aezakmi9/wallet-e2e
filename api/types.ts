@@ -81,6 +81,18 @@ export type UserRoleRequest = {
     role: AssignableUserRole;
 };
 
+// query params for paged lists (holds, postings, journal entries)
+export type PageQuery = {
+    page: number;
+    size: number;
+};
+
+// query params for /api/journal-entries/reference
+export type JournalReferenceQuery = {
+    type: string;
+    id: number;
+};
+
 // bank-sim
 export type PaymentRequest = {
     amount: number;
@@ -279,4 +291,12 @@ export type JwkSet = {
 
 export type HealthStatus = {
     status: string;
+};
+
+export type PageResponse<T> = {
+    content : T[];
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
 };

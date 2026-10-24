@@ -7,6 +7,8 @@ import type {
     AuthResponse,
     DepositDto,
     DepositRequest,
+    OutboxStatus,
+    PageQuery,
     RegistrationRequest,
     TransferRequest,
 } from '@api/types';
@@ -100,6 +102,22 @@ export class WalletUser {
         return this.request.get(`/api/transfers/${id}`, { headers: this.headers });
     }
 
+    async getJournalEntries(query: PageQuery): Promise<APIResponse> {
+        return this.request.get(`/api/journal-entries?/${query}`, {headers: this.headers});
+    }
+
+    async getJournalEntry(id: number): Promise<APIResponse> {
+        return this.request.get(`/api/journal-entries/${id}`, {headers: this.headers});
+    }
+
+    async getJournalEntriesByReference(id: number): Promise<APIResponse> {
+               return this.request.get(`/api/journal-entries/reference?type&${id}`, {headers: this.headers});
+    }
+
+    async getPostings(accountId: number, query: PageQuery): Promise<APIResponse> {
+                return this.request.get(`/api/accounts/${accountId}/postings?${query}`, {headers: this.headers});
+    }
+
     // ---------- setup helpers: fail fast and return the payload ----------
 
     async openAccount(overrides: Partial<AccountRequest> = {}): Promise<AccountDto> {
@@ -144,4 +162,27 @@ export class WalletUser {
         expect(deposit.status, deposit.failureReason ?? '').toBe('SUCCEEDED');
         return deposit;
     }
+
+    static async login(request: APIRequestContext, email: string, password:string): Promise<WalletUser> {
+        const response = await request.post('/api/auth/login', {
+            data: buildLoginRequest({email, password}),
+    });
+
+    expect(response.status(), await response.text()).toBe(200);
+
+    const {  payload } = (await response.json()) as ApiResponse<AuthResponse>;
+
+    return new WalletUser(payload.user.id, email, password, request, payload.accessToken,payload.refreshToken);
+}
+
+async getOutboxEvents(status?: OutboxStatus, size=100):Promise<APIResponse> {
+    return this.request.get('/api/outbox-events', {
+        headers: this.headers,
+        params: status ? { status, size} : { size},
+    });
+}
+
+async retryOutboxEvent(id: number):Promise<APIResponse> {
+    return this.request.post(`/api/outbox-events/${id}/retry`, {headers: this.headers});
+}
 }

@@ -6,7 +6,9 @@ import type {
     DepositRequest,
     HoldCaptureRequest,
     HoldRequest,
+    JournalReferenceQuery,
     LoginRequest,
+    PageQuery,
     PaymentRequest,
     RefreshTokenRequest,
     RegistrationRequest,
@@ -65,10 +67,9 @@ export function buildAccountRequest(overrides: Partial<AccountRequest> = {}): Ac
 }
 
 export function buildDepositRequest(
-    overrides: Overrides<DepositRequest, 'accountId'>
+    overrides: Overrides<DepositRequest, 'accountId' | 'amount'>
 ): DepositRequest {
     return {
-        amount: faker.number.int({ min: 100, max: 100_000 }),
         currency: DEFAULT_CURRENCY,
         gateway: 'bank-sim',
         ...overrides,
@@ -105,6 +106,24 @@ export function buildHoldCaptureRequest(
     overrides: Overrides<HoldCaptureRequest, 'destinationAccountId'>
 ): HoldCaptureRequest {
     return { ...overrides };
+}
+
+// Matches the API's defaults
+export function buildPageQuery(overrides: Partial<PageQuery> = {}): PageQuery {
+    return {
+        page: 0,
+        size: 20,
+        ...overrides,
+    };
+}
+
+export function buildJournalReferenceQuery(
+    overrides: Overrides<JournalReferenceQuery, 'id'>
+): JournalReferenceQuery {
+    return {
+        type: 'transfer',
+        ...overrides,
+    };
 }
 
 export function buildUserRoleRequest(overrides: Partial<UserRoleRequest> = {}): UserRoleRequest {

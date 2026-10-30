@@ -21,6 +21,7 @@ import {
     buildLoginRequest,
     buildRegistrationRequest,
 } from '@data/builders';
+import {ReverseRequest} from '@api/types'
 
 export class WalletUser {
     constructor(
@@ -123,6 +124,10 @@ export class WalletUser {
     // Admins only
     async changeRole(userId: number, role: UserRoleRequest): Promise<APIResponse> {
         return this.request.put(`/api/users/${userId}/role`, { headers: this.headers, data: role });
+    }
+
+    async reverseTranfser(id: number, reverse: ReverseRequest):Promise<ApiResponse> {
+        return this.request.post(`/api/transfers/${id}/reverse`,{headers: this.headers, data:reverse});
     }
 
     // ---------- setup helpers: fail fast and return the payload ----------

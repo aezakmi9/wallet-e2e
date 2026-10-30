@@ -1,5 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import type { APIRequestContext } from '@playwright/test';
+import { BankSim } from '@utils/BankSim';
 import { WalletUser } from '@utils/WalletUser';
 
 type WorkerFixtures = {
@@ -7,6 +8,7 @@ type WorkerFixtures = {
     user: WalletUser;
     recipient: WalletUser;
     admin: WalletUser;
+    bankSim: BankSim;
 };
 
 // /api/auth/** is rate limited per IP, so users are registered once per worker and
@@ -44,6 +46,17 @@ export const test = base.extend<{}, WorkerFixtures>({
             await use(await WalletUser.login(apiRequest, process.env.E2E_USER_EMAIL!, process.env.E2E_USER_PASSWORD!));
         },
     {scope: 'worker'}
+    ],
+
+    bankSim:[
+        async ({playwright}, use) => {
+        const context = await playwright.request.newContext({
+            baseURL: process.env.BANK_SIM_URL ?? 'http://localhost:8081',
+        });
+        await use(new BankSim(context));
+        await context.dispose();
+        },
+        {scope:'worker'}
     ],
 });
 

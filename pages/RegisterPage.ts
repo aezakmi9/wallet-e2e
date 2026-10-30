@@ -40,6 +40,7 @@ export class RegisterPage{
        await this.registerName.fill(name);
       await  this.registerEmail.fill(email);
        await this.registerPassword.fill(password);
+       await this.registerConfirmPassword.fill(password);
        await this.registerSubmit.click();
     }
 

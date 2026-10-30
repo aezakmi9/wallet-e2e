@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 import { test, expect } from '@fixtures/user';
 import { buildTransferRequest } from '@data/builders';
 import type { ApiErrorResponse, ApiResponse, TransferDto } from '@api/types';
-import { fr, tr } from '@faker-js/faker';
 
 // Deposits and transfers both charge a 2% fee, rounded down. The transfer fee comes out of
 // what the recipient gets.

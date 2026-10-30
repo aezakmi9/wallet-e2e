@@ -68,7 +68,6 @@ test('Should top up the account', async ({ accountPage, owner, account }) => {
     await accountPage.depositAmount.fill('25.00');
     await accountPage.depositSubmit.click();
 
-    // Newest first; the bank settles it asynchronously and the page polls until it does
     await expect(accountPage.depositStatus.first()).toHaveText('SUCCEEDED', { timeout: 15_000 });
     await expect(accountPage.depositsTable.locator('tbody tr').first()).toContainText(usd(afterFee(2_500)));
     expect(await owner.balanceOf(account)).toBe(before + afterFee(2_500));

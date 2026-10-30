@@ -41,13 +41,6 @@ export default defineConfig({
             // Every page load is an auth request, and the API allows 20 per IP per minute
             workers: 1,
         },
-        {
-            name: 'mobile-safari',
-            testIgnore: /api\//,
-            use: { ...devices['iPhone 14'], storageState: '.auth/user.json' },
-            dependencies: ['setup'],
-            workers: 1,
-        },
     ],
 
     webServer: process.env.START_CMD

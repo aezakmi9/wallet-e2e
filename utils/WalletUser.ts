@@ -7,10 +7,12 @@ import type {
     AuthResponse,
     DepositDto,
     DepositRequest,
+    JournalReferenceQuery,
     OutboxStatus,
     PageQuery,
     RegistrationRequest,
     TransferRequest,
+    UserRoleRequest,
 } from '@api/types';
 import {
     DEFAULT_CURRENCY,
@@ -103,19 +105,24 @@ export class WalletUser {
     }
 
     async getJournalEntries(query: PageQuery): Promise<APIResponse> {
-        return this.request.get(`/api/journal-entries?/${query}`, {headers: this.headers});
+        return this.request.get('/api/journal-entries', { headers: this.headers, params: query });
     }
 
     async getJournalEntry(id: number): Promise<APIResponse> {
         return this.request.get(`/api/journal-entries/${id}`, {headers: this.headers});
     }
 
-    async getJournalEntriesByReference(id: number): Promise<APIResponse> {
-               return this.request.get(`/api/journal-entries/reference?type&${id}`, {headers: this.headers});
+    async getJournalEntriesByReference(query: JournalReferenceQuery): Promise<APIResponse> {
+        return this.request.get('/api/journal-entries/reference', { headers: this.headers, params: query });
     }
 
     async getPostings(accountId: number, query: PageQuery): Promise<APIResponse> {
-                return this.request.get(`/api/accounts/${accountId}/postings?${query}`, {headers: this.headers});
+        return this.request.get(`/api/accounts/${accountId}/postings`, { headers: this.headers, params: query });
+    }
+
+    // Admins only
+    async changeRole(userId: number, role: UserRoleRequest): Promise<APIResponse> {
+        return this.request.put(`/api/users/${userId}/role`, { headers: this.headers, data: role });
     }
 
     // ---------- setup helpers: fail fast and return the payload ----------

@@ -30,6 +30,6 @@ async goto() {
 async login(email: string,password: string) {
     await this.loginEmail.fill(email);
    await this.loginPassword.fill(password);
-   await  this.loginSubmit.click;
+   await this.loginSubmit.click();
 }
 }

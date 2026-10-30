@@ -1,22 +1,21 @@
 import {test, expect} from '@fixtures/user';
 import {buildTransferRequest} from '@data/builders';
-import type{ ApiResponse, OutboxEvenDto, OutboxStatus, Page, PageResponse, TransferDto} from '@api/types';
+import type { ApiResponse, OutboxEventDto, OutboxStatus, PageResponse, TransferDto } from '@api/types';
 import type {WalletUser} from '@utils/WalletUser';
-import { isNumberObject } from 'node:util/types';
 
 async function eventFor(
     admin: WalletUser,
     transferId: number,
     eventType: string,
     status?: OutboxStatus
-): Promise<OutboxEvenDto> {
-    let event: OutboxEvenDto | undefined;
+): Promise<OutboxEventDto> {
+    let event: OutboxEventDto | undefined;
     await expect
     .poll(
         async() => {
             const response = await admin.getOutboxEvents(status);
-            const { payload } = await (response.json()) as ApiResponse<PageResponse<OutboxEvenDto>>;
-            event - payload.content.find(
+            const { payload } = await (response.json()) as ApiResponse<PageResponse<OutboxEventDto>>;
+            event = payload.content.find(
                 (e) => e.aggregateType ==='transfer' && e.aggregateId ===transferId && e.eventType===eventType
             );
             return event?.status;
@@ -54,7 +53,7 @@ test('Should publish an event for a completed transfer', async ( {user,recipient
     });
 });
 
-test('Should ublish an event for a failed transfer', async({user, recipient, admin})=> {
+test('Should publish an event for a failed transfer', async({user, recipient, admin})=> {
     const balance = await user.balanceOf(await user.account());
     const created = await transfer(user,recipient,balance+1);
     expect(created.status).toBe('FAILED');

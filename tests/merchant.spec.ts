@@ -1,46 +1,50 @@
-import {test, expect} from '@fixtures/logint';
-import { AccountPage } from '@pages/AccountPage';
-import type {MerchantHoldsPage} from '@pages/MerchantHoldsPage';
-import { WalletUser } from '@utils/WalletUser';
+import { test, expect } from '@fixtures/logint';
+import type { MerchantHoldsPage } from '@pages/MerchantHoldsPage';
+import type { ApiResponse, HoldDto } from '@api/types';
 
+// Money is shown with the browser's locale
+test.use({ locale: 'en-US' });
 
-test.use({locale: 'en-US'});
+const usd = (minorUnits: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(minorUnits / 100);
 
-const usd = (minorUnits: number) => new Intl.NumberFormat('en-US', {
-    style: 'currency', currency:'USD'
-        }).format(minorUnits / 100);
-
-WalletUser.register(worker);    
-
+// The list is rebuilt from the holds this browser placed, so it only shows once they are re-read
 async function open(holdsPage: MerchantHoldsPage) {
     await holdsPage.goto();
-    await
-    expect(holdsPage.merchantHoldsTableLoading).toBeHidden();
+    await expect(holdsPage.placeHoldForm).toBeVisible();
+    await expect(holdsPage.holdsLoading).toBeHidden();
 }
 
-test('Should show the holds page to a merchant', async ({
-    MerchantHoldsPage
-})=> {
-    await open(MerchantHoldsPage);
+test('Should show the holds page to a merchant', async ({ merchantHoldsPage }) => {
+    await open(merchantHoldsPage);
 
-    await expect(MerchantHoldsPage.placeHoldForm).toBeVisible();
-    await expect(MerchantHoldsPage.trackHoldForm).toBeVisible();
-})
+    await expect(merchantHoldsPage.placeHoldForm).toBeVisible();
+    await expect(merchantHoldsPage.trackHoldForm).toBeVisible();
+});
 
-test('Should place a hold on an account', async({})=> {
-    MerchantHoldsPage, owner, account
-})=> {
-    await owner.fund(Account, 5_000);
+test('Should place a hold on an account', async ({ page, merchantHoldsPage, owner, account }) => {
+    await owner.fund(account, 5_000);
     const before = await owner.balanceOf(account);
-    await open(MerchantHoldsPage);
+    await open(merchantHoldsPage);
 
-        await merchantHoldsPage.placeHoldAccount.fill(String(account.id));
-    // TODO: is this a combobox? Maybe click placeHoldAccountOption(String(account.id)) instead
+    // The picker takes a typed account number; its suggestions are optional
+    await merchantHoldsPage.placeHoldAccount.fill(String(account.id));
     await merchantHoldsPage.placeHoldAmount.fill('10.00');
+    const created = page.waitForResponse(
+        (r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/holds'
+    );
     await merchantHoldsPage.placeHoldSubmit.click();
 
-    // TODO: get the new hold's id (response wait or first row) -> merchantHoldsTableRow(id)
-    await expect(merchantHoldsPage.holdStatus.first()).toHaveText('ACTIVE');
-    // TODO: does a hold reduce the balance or only the available amount? Assert against `before`
+    const response = await created;
+    expect(response.status(), await response.text()).toBe(201);
+    const { payload: hold } = (await response.json()) as ApiResponse<HoldDto>;
+
+    await expect(merchantHoldsPage.placeHoldError).toBeHidden();
+    const row = merchantHoldsPage.merchantHoldsTableRow(String(hold.id));
+    await expect(row).toContainText(`#${account.id}`);
+    await expect(row).toContainText(usd(1_000));
+    await expect(row.getByTestId('hold-status')).toHaveText('ACTIVE');
+
+    // A hold only reserves the money: the balance stays the same until it is captured
+    expect(await owner.balanceOf(account)).toBe(before);
 });
-}

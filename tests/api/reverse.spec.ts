@@ -6,6 +6,7 @@ import { isErrored } from 'node:stream';
 import { receiveMessageOnPort } from 'node:worker_threads';
 import { json } from 'node:stream/consumers';
 import { SimpleLocationModule } from '@faker-js/faker';
+import { transferableAbortController } from 'node:util';
 
 const afterFee = (amount: number) => amount - Math.floor((amount* 200)/10_000);
 
@@ -103,4 +104,64 @@ test('should not reverse a transfer twiuce', async({
 
     expect(await user.balanceOf(from)).toBe(fromAfterFirst);
 });
+
+test('Should not reverse a failed transfer', async ({user, recipient, admin})=> {
+    const from = await user.account();
+    const to = await recipient.account();
+    const created = await user.createTransfer(
+        buildTransferRequest({idFromAccount: from.id, idToAccount: to.id, amount: (await user.balanceOf(from))+1}));
+        const {payload: transfer} = (await created.json()) as ApiResponse<TransferDto>;
+        expect(transfer.status).toBe('FAILED');
+
+        const response = await admin.reverseTranfser(transfer.id, buildReverseRequest());
+        expect(response.status()).toBe(409);
+        expect(await statusOf(user,transfer.id)).toBe('FAILED');
+});
+
+test('Should not reverse a transfer the recipient has already spent', async ({user,recipient, admin})=> {
+    const from = await user.account();
+    const to = await recipient.account();
+    const transfer = await completedTransfer(user, recipient, 1_000);
+
+    const spent = await recipient.createTransfer(
+        buildTransferRequest({
+            idFromAccount: to.id,
+            idToAccount:from.id,
+            amount: await recipient.balanceOf(to)}));
+            expect(spent.status(), await spent.text()).toBe(201);
+            const fromBefore = await user.balanceOf(from);
+
+            const response = await admin.reverseTranfser(transfer.id, buildReverseRequest());
+            expect(response.status()).toBe(409);
+
+            expect(await statusOf(user,transfer.id)).toBe('COMPLETED');
+            expect(await user.balanceOf(from)).toBe(fromBefore);
+            expect(await recipient.balanceOf(to)).toBe(0);
+});
+
+test('Should not let a regualr user revers a transfer', async({user, recipient})=>{
+    const transfer = await completedTransfer(user, recipient,1_000);
+
+    const response = await user.reverseTranfser(transfer.id, buildReverseRequest());
+    expect (response.status()).toBe(403);
+    expect(await statusOf(user, transfer.id)).toBe('COMPLETED');
+});
+
+test('should return 404 when reversin a transfer that does not exist', async ({admin})=>{
+    const response = await admin.reverseTranfser(999_999_999, buildReverseRequest());
+    expect(response.status()).toBe(404);
+});
+
+for (const [rule, reason] of [
+    ['is blank', '   '],
+    ['is longer than 200 characters', 'x'.repeat(201)],
+] as const) {
+    test(`Should reject a reversal reason that ${rule}`, async ({user, recipient, admin})=> {
+        const transfer = await completedTransfer(user, recipient, 1_000);
+
+        const response  = await admin.reverseTranfser(transfer.id, buildReverseRequest({reason}));
+        expect(response.status()).toBe(400);
+        expect(await statusOf(user,transfer.id)).toBe('COMPLETED');
+    });
+}
 

@@ -4,9 +4,11 @@ import type {
     AccountDto,
     AccountRequest,
     ApiResponse,
+    AssignableUserRole,
     AuthResponse,
     DepositDto,
     DepositRequest,
+    HoldRequest,
     JournalReferenceQuery,
     OutboxStatus,
     PageQuery,
@@ -19,6 +21,7 @@ import {
     buildAccountRequest,
     buildDepositRequest,
     buildLoginRequest,
+    buildPageQuery,
     buildRegistrationRequest,
 } from '@data/builders';
 import {ReverseRequest} from '@api/types'
@@ -197,4 +200,21 @@ async getOutboxEvents(status?: OutboxStatus, size=100):Promise<APIResponse> {
 async retryOutboxEvent(id: number):Promise<APIResponse> {
     return this.request.post(`/api/outbox-events/${id}/retry`, {headers: this.headers});
 }
+
+async placeHold(hold: HoldRequest): Promise<APIResponse> {
+    return this.request.post('/api/holds', {headers: this.headers, data:hold})
+}
+
+async getAccountHolds(accountId: number, query: PageQuery = buildPageQuery()): Promise<APIResponse> {
+    return this.request.get(`/api/accounts/${accountId}/holds`,{ headers: this.headers, params: query });
+}
+
+async releaseHold(id: number): Promise<APIResponse> {
+    return this.request.post(`/api/holds/${id}/release`, { headers: this.headers });
+}
+
+  async changeRoleAssign(userId: number, role: AssignableUserRole): Promise<APIResponse> {
+        return this.request.put(`/api/users/${userId}/role`, { headers: this.headers, data: { role } });
+    }
+
 }

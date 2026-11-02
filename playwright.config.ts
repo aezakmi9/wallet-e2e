@@ -41,11 +41,14 @@ export default defineConfig({
             // Every page load is an auth request, and the API allows 20 per IP per minute
             workers: 1,
         },
-        {
-            name: 'mobile-safari',
-            testIgnore: /api\//,
-            use: { ...devices['iPhone 14'], storageState: '.auth/user.json' },
-            dependencies: ['setup'],
+
+         {
+            name: 'bank-sim',
+            testMatch: /api\/payments\.spec\.ts/,
+            use: { baseURL: apiURL },
+            // Last and alone: a DECLINE or DROP scenario would break every other test that funds an account
+            dependencies: ['api', 'chromium'],
+            fullyParallel: false,
             workers: 1,
         },
     ],

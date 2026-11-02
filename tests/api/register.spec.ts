@@ -16,7 +16,6 @@ test('Should register a new user', async ({ request }) => {
     expect(payload.user).toMatchObject({ name: data.name, email: data.email, role: 'USER' });
     expect(payload).not.toHaveProperty('user.password');
 
-    // The new user is logged in straight away
     const accounts = await request.get('/api/accounts', {
         headers: { Authorization: `${payload.tokenType} ${payload.accessToken}` },
     });

@@ -4,21 +4,27 @@ import type {
     AccountDto,
     AccountRequest,
     ApiResponse,
+    AssignableUserRole,
     AuthResponse,
     DepositDto,
     DepositRequest,
+    HoldRequest,
+    JournalReferenceQuery,
     OutboxStatus,
     PageQuery,
     RegistrationRequest,
     TransferRequest,
+    UserRoleRequest,
 } from '@api/types';
 import {
     DEFAULT_CURRENCY,
     buildAccountRequest,
     buildDepositRequest,
     buildLoginRequest,
+    buildPageQuery,
     buildRegistrationRequest,
 } from '@data/builders';
+import {ReverseRequest} from '@api/types'
 
 export class WalletUser {
     constructor(
@@ -103,19 +109,28 @@ export class WalletUser {
     }
 
     async getJournalEntries(query: PageQuery): Promise<APIResponse> {
-        return this.request.get(`/api/journal-entries?/${query}`, {headers: this.headers});
+        return this.request.get('/api/journal-entries', { headers: this.headers, params: query });
     }
 
     async getJournalEntry(id: number): Promise<APIResponse> {
         return this.request.get(`/api/journal-entries/${id}`, {headers: this.headers});
     }
 
-    async getJournalEntriesByReference(id: number): Promise<APIResponse> {
-               return this.request.get(`/api/journal-entries/reference?type&${id}`, {headers: this.headers});
+    async getJournalEntriesByReference(query: JournalReferenceQuery): Promise<APIResponse> {
+        return this.request.get('/api/journal-entries/reference', { headers: this.headers, params: query });
     }
 
     async getPostings(accountId: number, query: PageQuery): Promise<APIResponse> {
-                return this.request.get(`/api/accounts/${accountId}/postings?${query}`, {headers: this.headers});
+        return this.request.get(`/api/accounts/${accountId}/postings`, { headers: this.headers, params: query });
+    }
+
+    // Admins only
+    async changeRole(userId: number, role: UserRoleRequest): Promise<APIResponse> {
+        return this.request.put(`/api/users/${userId}/role`, { headers: this.headers, data: role });
+    }
+
+    async reverseTranfser(id: number, reverse: ReverseRequest):Promise<ApiResponse> {
+        return this.request.post(`/api/transfers/${id}/reverse`,{headers: this.headers, data:reverse});
     }
 
     // ---------- setup helpers: fail fast and return the payload ----------
@@ -185,4 +200,21 @@ async getOutboxEvents(status?: OutboxStatus, size=100):Promise<APIResponse> {
 async retryOutboxEvent(id: number):Promise<APIResponse> {
     return this.request.post(`/api/outbox-events/${id}/retry`, {headers: this.headers});
 }
+
+async placeHold(hold: HoldRequest): Promise<APIResponse> {
+    return this.request.post('/api/holds', {headers: this.headers, data:hold})
+}
+
+async getAccountHolds(accountId: number, query: PageQuery = buildPageQuery()): Promise<APIResponse> {
+    return this.request.get(`/api/accounts/${accountId}/holds`,{ headers: this.headers, params: query });
+}
+
+async releaseHold(id: number): Promise<APIResponse> {
+    return this.request.post(`/api/holds/${id}/release`, { headers: this.headers });
+}
+
+  async changeRoleAssign(userId: number, role: AssignableUserRole): Promise<APIResponse> {
+        return this.request.put(`/api/users/${userId}/role`, { headers: this.headers, data: { role } });
+    }
+
 }
